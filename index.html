@@ -311,6 +311,10 @@ body{
         <button class="btn btn-primary btn-sm" id="cfgSave">💾 保存配置</button>
         <button class="btn btn-ghost btn-sm" id="cfgTest" style="margin-left:8px">🔍 测试连接</button>
         <span id="cfgStatus" style="font-size:12px;margin-left:8px"></span>
+        <div style="margin-top:10px">
+          <button class="btn btn-primary btn-sm" id="cfgGenTasks">🤖 AI生成任务 (补充任务池)</button>
+          <span id="cfgGenStatus" style="font-size:12px;margin-left:8px"></span>
+        </div>
       </div>
       <div class="admin-section">
         <h3>📊 任务参数</h3>
@@ -459,18 +463,73 @@ function rewardFor(diff){
 
 // ─── Task Pool Engine ────────────
 const STATIC_TASKS=[
+  // === 科学常识 (10) ===
   {q:'小明说"太阳从西边升起"，小红说"太阳从东边升起"。谁说得对？',a:'小红说得对',b:'小明说得对',correct:'a',reason:'太阳从东边升起，这是自然常识。',diff:'easy',topic:'科学'},
-  {q:'下面哪句话写得更好？',a:'春天来了，花开了。',b:'春天踮着脚尖走过，一路撒下花瓣。',correct:'b',reason:'B用了拟人手法，更有画面感。',diff:'medium',topic:'语文'},
-  {q:'"一言既出"的下一句是什么？',a:'驷马难追',b:'千金不换',correct:'a',reason:'成语"一言既出，驷马难追"，意思是一句话说出了口，就是套上四匹马拉的车也难追上。',diff:'easy',topic:'语文'},
   {q:'AI说"鲸鱼是鱼类"。这句话对吗？',a:'不对，鲸鱼是哺乳动物',b:'对，鲸鱼生活在海里所以是鱼',correct:'a',reason:'鲸鱼用肺呼吸、胎生哺乳，是哺乳动物不是鱼类。',diff:'easy',topic:'科学'},
-  {q:'下面哪个句子有错别字？',a:'我今天特别开心',b:'我今天特别开兴',correct:'b',reason:'"开兴"应该是"开心"，"兴"和"心"在这里容易混淆。',diff:'easy',topic:'语文'},
-  {q:'AI写了两个故事开头，哪个更吸引人？',a:'这是一个普通的早晨，我起床了。',b:'那天早上，我打开门，发现门口放着一个没有写寄件人的包裹。',correct:'b',reason:'B制造了悬念，让人想知道包裹里是什么。',diff:'medium',topic:'写作'},
-  {q:'"三人行，必有我师焉"是谁说的？',a:'孔子',b:'老子',correct:'a',reason:'这句话出自《论语》，是孔子说的，意思是几个人一起走路，其中必定有可以做我老师的人。',diff:'easy',topic:'国学'},
-  {q:'下面哪个行为更节约用水？',a:'洗澡时一直开着水龙头',b:'涂沐浴露的时候关掉水',correct:'b',reason:'涂沐浴露时关水可以节省大量自来水。',diff:'easy',topic:'生活'},
   {q:'AI说"地球绕着月亮转"。对吗？',a:'不对，月亮绕着地球转',b:'对，地球绕着月亮转',correct:'a',reason:'月球是地球的卫星，围绕地球公转。',diff:'easy',topic:'科学'},
-  {q:'"举头望明月"的下一句？',a:'低头思故乡',b:'低头看地上',correct:'a',reason:'这是李白《静夜思》的名句。',diff:'easy',topic:'诗词'},
-  {q:'哪种说法更准确？',a:'企鹅生活在北极',b:'企鹅生活在南极',correct:'b',reason:'企鹅主要分布在南极及周边地区，北极没有企鹅。',diff:'medium',topic:'地理'},
+  {q:'蝙蝠是鸟类吗？',a:'不是，蝙蝠是哺乳动物',b:'是，蝙蝠会飞所以是鸟类',correct:'a',reason:'蝙蝠有毛发、胎生哺乳，是唯一会飞的哺乳动物。',diff:'easy',topic:'科学'},
+  {q:'彩虹有几种颜色？',a:'7种：红橙黄绿蓝靛紫',b:'6种：红黄绿蓝靛紫',correct:'a',reason:'彩虹有7种颜色：红、橙、黄、绿、蓝、靛、紫。',diff:'easy',topic:'科学'},
+  {q:'为什么天空是蓝色的？',a:'阳光中的蓝光被大气散射得更厉害',b:'因为海水反射到天空上',correct:'a',reason:'阳光中蓝光波长较短，更容易被大气分子散射。',diff:'hard',topic:'科学'},
+  {q:'植物通过什么过程制造食物？',a:'光合作用',b:'呼吸作用',correct:'a',reason:'植物通过光合作用，利用阳光、水和二氧化碳制造养分。',diff:'easy',topic:'科学'},
+  {q:'人体最大的器官是什么？',a:'皮肤',b:'肝脏',correct:'a',reason:'皮肤是人体最大的器官，覆盖全身起到保护作用。',diff:'medium',topic:'科学'},
+  {q:'蚂蚁用什么交流？',a:'触角和信息素',b:'发出声音',correct:'a',reason:'蚂蚁通过触角触碰和释放化学信息素来交流。',diff:'medium',topic:'科学'},
+  {q:'为什么先看到闪电后听到雷声？',a:'光速比声速快很多',b:'闪电离我们更近',correct:'a',reason:'光速约30万km/s，声速约340m/s，所以先看到闪电。',diff:'medium',topic:'科学'},
+  // === 语文 (12) ===
+  {q:'下面哪句话写得更好？',a:'春天来了，花开了。',b:'春天踮着脚尖走过，一路撒下花瓣。',correct:'b',reason:'B用了拟人手法，更有画面感。',diff:'medium',topic:'语文'},
+  {q:'下面哪个句子有错别字？',a:'我今天特别开心',b:'我今天特别开兴',correct:'b',reason:'"开兴"应该是"开心"，"兴"和"心"容易混淆。',diff:'easy',topic:'语文'},
   {q:'下面哪句表达更生动？',a:'她的脸红红的。',b:'她的脸红得像熟透的番茄。',correct:'b',reason:'B用了比喻，更形象生动。',diff:'medium',topic:'语文'},
+  {q:'"己"和"已"怎么区分？',a:'开口"己"（jǐ），半口"已"（yǐ）',b:'两个字完全一样',correct:'a',reason:'"己"上面开口，"已"上面半封口，读音和意思都不同。',diff:'easy',topic:'语文'},
+  {q:'下面哪个是"的""地""得"的正确用法？',a:'他跑得很快',b:'他跑的很快',correct:'a',reason:'"得"用于补语前，表示程度或结果，"跑得很快"正确。',diff:'medium',topic:'语文'},
+  {q:'"热烈"的反义词是什么？',a:'冷淡',b:'热闹',correct:'a',reason:'"热烈"形容情绪高涨、气氛活跃，反义词是"冷淡"。',diff:'easy',topic:'语文'},
+  {q:'下面句子中哪个成语用得不对？',a:'他考试得了满分，真是名副其实的学霸',b:'他考试得了零分，真是名副其实的学霸',correct:'b',reason:'"名副其实"指名实相符，零分和学霸不符。',diff:'medium',topic:'语文'},
+  {q:'"她像一只受惊的小鹿"用了什么修辞手法？',a:'比喻',b:'拟人',correct:'a',reason:'把人比作小鹿，是比喻（明喻），用"像"连接。',diff:'medium',topic:'语文'},
+  {q:'下面哪个是完整的句子？',a:'因为下雨了',b:'因为下雨了，所以运动会延期了',correct:'b',reason:'A只有原因没有结果，是不完整的句子。B有完整因果。',diff:'easy',topic:'语文'},
+  {q:'"安静"和"宁静"有什么区别？',a:'"宁静"多形容环境，"安静"可形容人和环境',b:'两个词完全一样没有区别',correct:'a',reason:'"宁静"偏书面语多形容自然环境，"安静"更常用范围更广。',diff:'hard',topic:'语文'},
+  {q:'下面哪句话语气最礼貌？',a:'把门关上！',b:'麻烦你把门关上好吗？',correct:'b',reason:'B用了"麻烦""好吗"等礼貌用语，语气更温和。',diff:'easy',topic:'语文'},
+  {q:'"他急得像热锅上的蚂蚁"是什么描写？',a:'动作和心理描写',b:'外貌描写',correct:'a',reason:'用蚂蚁比喻焦急的状态，是心理描写，同时也暗示来回走动的动作。',diff:'medium',topic:'语文'},
+  // === 成语/诗词/国学 (10) ===
+  {q:'"一言既出"的下一句是什么？',a:'驷马难追',b:'千金不换',correct:'a',reason:'成语"一言既出，驷马难追"，意思是话说出口就收不回来。',diff:'easy',topic:'成语'},
+  {q:'"三人行，必有我师焉"是谁说的？',a:'孔子',b:'老子',correct:'a',reason:'出自《论语》，是孔子说的话。',diff:'easy',topic:'国学'},
+  {q:'"举头望明月"的下一句？',a:'低头思故乡',b:'低头看地上',correct:'a',reason:'李白《静夜思》的名句。',diff:'easy',topic:'诗词'},
+  {q:'"画蛇添足"是什么意思？',a:'做了多余的事，反而不好',b:'画画的时候把蛇脚画得很仔细',correct:'a',reason:'比喻做了多余的事，反而不恰当。',diff:'easy',topic:'成语'},
+  {q:'"春眠不觉晓"的下一句？',a:'处处闻啼鸟',b:'处处蚊子咬',correct:'a',reason:'孟浩然《春晓》：春眠不觉晓，处处闻啼鸟。',diff:'easy',topic:'诗词'},
+  {q:'"守株待兔"告诉我们什么道理？',a:'要主动努力，不能等待运气',b:'要耐心等待兔子送上门',correct:'a',reason:'讽刺那些不主动努力、妄想不劳而获的人。',diff:'medium',topic:'成语'},
+  {q:'"但愿人长久"的下一句是？',a:'千里共婵娟',b:'千里共明月',correct:'a',reason:'苏轼《水调歌头》的名句，表达对远方亲人的祝福。',diff:'medium',topic:'诗词'},
+  {q:'"对牛弹琴"比喻什么？',a:'对不懂道理的人讲道理',b:'牛喜欢听音乐',correct:'a',reason:'比喻对不懂道理的人讲高深道理，白费口舌。',diff:'easy',topic:'成语'},
+  {q:'"读书破万卷"的下一句？',a:'下笔如有神',b:'下笔如有风',correct:'a',reason:'杜甫诗句，意思是读了很多书后，写文章自然有灵感。',diff:'medium',topic:'诗词'},
+  {q:'"掩耳盗铃"讽刺什么？',a:'自己欺骗自己',b:'偷东西的人很聪明',correct:'a',reason:'捂住耳朵偷铃铛以为别人听不见，比喻自欺欺人。',diff:'easy',topic:'成语'},
+  // === 地理/历史 (6) ===
+  {q:'哪种说法更准确？',a:'企鹅生活在北极',b:'企鹅生活在南极',correct:'b',reason:'企鹅主要分布在南极及周边，北极没有企鹅。',diff:'medium',topic:'地理'},
+  {q:'中国最长的河流是？',a:'长江',b:'黄河',correct:'a',reason:'长江全长约6300公里，是中国第一长河，也是世界第三长河。',diff:'easy',topic:'地理'},
+  {q:'世界上面积最大的国家是？',a:'俄罗斯',b:'中国',correct:'a',reason:'俄罗斯面积约1709万平方公里，是世界上面积最大的国家。',diff:'easy',topic:'地理'},
+  {q:'"四大发明"不包括哪个？',a:'造纸术、印刷术、火药、指南针',b:'造纸术、印刷术、火药、地动仪',correct:'b',reason:'四大发明是造纸术、印刷术、火药、指南针，地动仪是张衡发明的但不属于四大发明。',diff:'medium',topic:'历史'},
+  {q:'赤道穿过哪个大洲？',a:'非洲和南美洲',b:'欧洲和亚洲',correct:'a',reason:'赤道穿过非洲、南美洲、亚洲（印尼）和大洋洲，不穿过欧洲。',diff:'medium',topic:'地理'},
+  {q:'长城主要修建于哪个朝代？',a:'秦朝和明朝',b:'唐朝和宋朝',correct:'a',reason:'长城最早大规模修建于秦朝，现在我们看到的主要是明朝修建的。',diff:'medium',topic:'历史'},
+  // === 数学/逻辑 (8) ===
+  {q:'小明有12颗糖，分给3个朋友每人同样多，每人几颗？',a:'4颗',b:'3颗',correct:'a',reason:'12÷3=4，每人分到4颗糖。',diff:'easy',topic:'数学'},
+  {q:'一个长方形长8厘米宽5厘米，周长是多少？',a:'26厘米',b:'40厘米',correct:'a',reason:'周长=(长+宽)×2=(8+5)×2=26厘米。',diff:'medium',topic:'数学'},
+  {q:'如果所有的猫都怕水，小白是一只猫，那么小白怕水吗？',a:'怕水',b:'不一定，可能有例外',correct:'a',reason:'根据逻辑推理，"所有猫都怕水"且"小白是猫"，则小白一定怕水。',diff:'medium',topic:'逻辑'},
+  {q:'小红比小明大，小明比小刚大。谁最大？',a:'小红',b:'小刚',correct:'a',reason:'小红>小明>小刚，所以小红最大。',diff:'easy',topic:'逻辑'},
+  {q:'1、3、5、7、？下一个数字是多少？',a:'9',b:'8',correct:'a',reason:'这是奇数序列，每次加2，7+2=9。',diff:'easy',topic:'数学'},
+  {q:'正方形有几条对称轴？',a:'4条',b:'2条',correct:'a',reason:'正方形有4条对称轴：2条对角线+2条对边中点连线。',diff:'hard',topic:'数学'},
+  {q:'如果今天是星期三，后天是星期几？',a:'星期五',b:'星期四',correct:'a',reason:'星期三→明天星期四→后天星期五。',diff:'easy',topic:'逻辑'},
+  {q:'小刚说"我最喜欢的动物不是狗也不是猫"，那么他可能喜欢什么？',a:'兔子或者鸟等其他动物',b:'一定喜欢鱼',correct:'a',reason:'不是猫也不是狗，可能是其他任何动物，不能确定一定是鱼。',diff:'medium',topic:'逻辑'},
+  // === 生活常识 (8) ===
+  {q:'下面哪个行为更节约用水？',a:'洗澡时一直开着水龙头',b:'涂沐浴露的时候关掉水',correct:'b',reason:'涂沐浴露时关水可以节省大量自来水。',diff:'easy',topic:'生活'},
+  {q:'吃剩的饭菜应该怎么处理？',a:'直接倒进下水道',b:'倒进厨余垃圾桶',correct:'b',reason:'厨余垃圾应分类投放，可以做成肥料或沼气。',diff:'easy',topic:'生活'},
+  {q:'遇到陌生人敲门应该怎么做？',a:'先问清楚是谁，不要随便开门',b:'直接开门看看是谁',correct:'a',reason:'安全第一，要先确认对方身份，不给陌生人开门。',diff:'easy',topic:'生活'},
+  {q:'手机充电时可以一直玩大型游戏吗？',a:'最好不要，手机会过热影响电池寿命',b:'没问题，想怎么玩就怎么玩',correct:'a',reason:'边充电边玩大型游戏会让手机过热，长期会损伤电池。',diff:'medium',topic:'生活'},
+  {q:'为什么夏天穿白色衣服比黑色衣服凉快？',a:'白色反射阳光，黑色吸收阳光',b:'白色衣服更薄',correct:'a',reason:'白色反射大部分阳光，黑色吸收阳光转化为热量。',diff:'medium',topic:'生活'},
+  {q:'不小心被热水烫到，第一时间应该？',a:'用流动冷水冲洗降温',b:'涂牙膏或酱油',correct:'a',reason:'烫伤后应立即用流动冷水冲洗15-20分钟降温，不要乱涂东西。',diff:'medium',topic:'生活'},
+  {q:'哪些食物不能一起吃？（常识判断）',a:'柿子和螃蟹不宜同食，可能引起不适',b:'什么食物都能一起吃没讲究',correct:'a',reason:'柿子和螃蟹都属寒性且含鞣酸和蛋白质，同食可能引起肠胃不适。',diff:'hard',topic:'生活'},
+  {q:'为什么饭前要洗手？',a:'手上的细菌可能随食物进入身体导致生病',b:'只是习惯问题没什么实际作用',correct:'a',reason:'手上有很多看不见的细菌病毒，饭前洗手能有效预防疾病。',diff:'easy',topic:'生活'},
+  // === 趣味思考 (6) ===
+  {q:'AI写了两个故事开头，哪个更吸引人？',a:'这是一个普通的早晨，我起床了。',b:'那天早上，我打开门，发现门口放着一个没有写寄件人的包裹。',correct:'b',reason:'B制造了悬念，让人想知道包裹里是什么。',diff:'medium',topic:'写作'},
+  {q:'如果让你给外星人介绍地球，你觉得先说哪件事更好？',a:'先介绍地球上的水和空气，因为这是生命的基础',b:'先介绍人类的科技，因为这是最厉害的东西',correct:'a',reason:'水和空气是地球生命的基础，先介绍最基本的更符合认知顺序。',diff:'hard',topic:'思考'},
+  {q:'你觉得"努力"和"聪明"哪个更重要？',a:'努力更重要，因为聪明但不努力也难成功',b:'聪明更重要，因为聪明的人不用努力',correct:'a',reason:'聪明是天赋，努力是选择。很多成功靠的是持之以恒而非仅靠聪明。',diff:'hard',topic:'思考'},
+  {q:'下面哪个更可能是说明"坚持很重要"的故事？',a:'龟兔赛跑',b:'守株待兔',correct:'a',reason:'龟兔赛跑中乌龟虽然慢但坚持不懈最终获胜，说明坚持的重要性。',diff:'medium',topic:'思考'},
+  {q:'AI说"所有问题都有一个标准答案"。你同意吗？',a:'不同意，很多问题没有标准答案比如"什么颜色最好看"',b:'完全同意',correct:'a',reason:'很多主观问题（审美、喜好等）没有标准答案，这是AI和人的区别之一。',diff:'hard',topic:'思考'},
+  {q:'如果同学不小心弄坏了你的文具，最好的处理方式是？',a:'冷静告诉对方，一起想办法解决',b:'立刻生气并要求赔偿',correct:'a',reason:'冷静沟通更能解决问题，也维护了同学关系。',diff:'easy',topic:'思考'},
 ];
 let staticPool=[...STATIC_TASKS];
 // Shuffle
@@ -501,25 +560,51 @@ async function callAPI(messages){
 
   const opts={method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body};
 
-  // Try proxy first if configured
+  // 1) User-configured proxy
   if(proxy){
-    try{return await tryFetch(proxy,{...opts,headers:{...opts.headers,'X-Target-URL':url}});}catch(e){}
-    try{return await tryFetch(proxy+encodeURIComponent(url),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({method:'POST',url,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},body})});}catch(e){}
+    try{
+      // corsproxy.io style: prefix URL
+      return await tryFetch(proxy+encodeURIComponent(url),opts);
+    }catch(e){}
+    try{
+      // Generic: forward as-is with X-Target-URL
+      return await tryFetch(proxy,{...opts,headers:{...opts.headers,'X-Target-URL':url}});
+    }catch(e){}
   }
 
-  // Try public proxies
-  const proxies=[
-    (u,o)=>fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...o,url:u,body:o.body})}).then(r=>r.json()),
-    (u,o)=>fetch('https://thingproxy.freeboard.io/fetch/'+u,o).then(r=>r.json()),
-    (u,o)=>fetch('https://cors.eu.org/'+u,o).then(r=>r.json()),
+  // 2) Public proxies (ranked by reliability)
+  const proxyList=[
+    async()=>{
+      // corsproxy.io - most reliable free CORS proxy
+      const r=await fetch('https://corsproxy.io/?'+encodeURIComponent(url),opts);
+      if(!r.ok)throw new Error(`proxy ${r.status}`);
+      return r.json();
+    },
+    async()=>{
+      // allorigins.win
+      const r=await fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url),{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},body})
+      });
+      if(!r.ok)throw new Error(`proxy ${r.status}`);
+      return r.json();
+    },
+    async()=>{
+      // Direct call (works if API has CORS enabled)
+      return await tryFetch(url,opts);
+    },
+    async()=>{
+      // codetabs.com CORS proxy
+      const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(url),{
+        method:'POST',headers:{'Content-Type':'application/json'},body
+      });
+      if(!r.ok)throw new Error(`proxy ${r.status}`);
+      return r.json();
+    },
   ];
 
-  // Direct call last
-  try{return await tryFetch(url,opts);}catch(e){}
-
-  // Try each proxy
-  for(const pf of proxies){
-    try{return await pf(url,opts);}catch(e){continue;}
+  for(const pf of proxyList){
+    try{return await pf();}catch(e){continue;}
   }
 
   throw new Error('所有API调用方式均失败');
@@ -892,6 +977,36 @@ app.cfgTest.onclick=async function(){
     app.cfgStatus.textContent='❌ 失败: '+e.message;
     app.cfgStatus.style.color='#ef4444';
   }
+};
+
+app.cfgGenTasks=document.getElementById('cfgGenTasks');
+app.cfgGenStatus=document.getElementById('cfgGenStatus');
+app.cfgGenTasks.onclick=async function(){
+  app.cfgGenTasks.disabled=true;
+  app.cfgGenStatus.textContent='⏳ AI生成中…';
+  app.cfgGenStatus.style.color='#64748b';
+  const diffs=['easy','easy','medium','medium','hard'];
+  let added=0;
+  for(let i=0;i<8;i++){
+    const diff=diffs[Math.floor(Math.random()*diffs.length)];
+    try{
+      const t=await generateTaskFromAI(diff);
+      state.tasks.push(t);
+      added++;
+      app.cfgGenStatus.textContent=`⏳ 已生成 ${added}/8…`;
+    }catch(e){
+      // fallback to static
+      const t=getStaticTask();
+      if(!state.tasks.find(x=>x.q===t.q)){state.tasks.push(t);added++;}
+      app.cfgGenStatus.textContent=`⏳ 部分使用备用… ${added}/8`;
+    }
+  }
+  saveState();
+  app.cfgGenStatus.textContent=`✅ 完成！新增 ${added} 个任务`;
+  app.cfgGenStatus.style.color='#10b981';
+  app.cfgGenTasks.disabled=false;
+  setTimeout(()=>{app.cfgGenStatus.textContent='';},3000);
+  checkReset();renderAll();
 };
 
 app.cfgSaveParams.onclick=function(){

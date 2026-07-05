@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#7c3aed">
+<title>✨ 星星任务站</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --p:#7c3aed;--p2:#a78bfa;--p3:#ede9fe;
+  --gold:#f59e0b;--gold2:#fde68a;--gold3:#fffbeb;
+  --g:#10b981;--g2:#d1fae5;--r:#ef4444;--r2:#fee2e2;
+  --bg:#f5f0ff;--card:#fff;--t1:#1e293b;--t2:#64748b;--t3:#94a3b8;
+  --sh:0 2px 8px rgba(124,58,237,.08);--sh2:0 4px 24px rgba(124,58,237,.12);
+  --rds:16px;--rds2:12px;--rds3:8px;
+  --fs:14px;--fs2:16px;--fs3:20px;--fs4:28px;
+  --safe:env(safe-area-inset-bottom,12px);
+  --nav-h:64px;
+}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  background:linear-gradient(135deg,#f5f0ff 0%,#fef3f9 40%,#fef9f0 100%);
+  min-height:100dvh;color:var(--t1);font-size:var(--fs2);line-height:1.5;
+  -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;
+  display:flex;justify-content:center;
+}
+.app{width:100%;max-width:480px;min-height:100dvh;display:flex;flex-direction:column;position:relative;overflow-x:hidden}
+/* Header */
+.header{padding:20px 20px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.logo span{font-size:26px;margin-right:4px}
+.progress-badge{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:20px;padding:6px 14px;box-shadow:var(--sh);font-size:var(--fs);font-weight:600}
+.progress-badge .coin{font-size:18px}
+.progress-badge .val{color:var(--p)}
+/* Daily bar */
+.daily-bar{padding:0 20px 16px;flex-shrink:0}
+.daily-card{background:var(--card);border-radius:var(--rds);padding:14px 16px;box-shadow:var(--sh);display:flex;align-items:center;gap:12px}
+.daily-card .icon{font-size:28px;flex-shrink:0}
+.daily-info{flex:1;min-width:0}
+.daily-info .title{font-size:var(--fs);font-weight:600;margin-bottom:4px}
+.daily-info .sub{font-size:12px;color:var(--t2)}
+.daily-bar-track{height:8px;background:var(--p3);border-radius:4px;margin-top:6px;overflow:hidden}
+.daily-bar-fill{height:100%;background:linear-gradient(90deg,var(--p),var(--p2));border-radius:4px;transition:width .5s ease}
+.daily-amount{text-align:right;font-weight:700;font-size:var(--fs3);color:var(--p);white-space:nowrap}
+.daily-amount small{font-size:12px;font-weight:400;color:var(--t2)}
+/* Main content */
+.main{flex:1;overflow-y:auto;padding:0 20px 20px;-webkit-overflow-scrolling:touch}
+.page{display:none}
+.page.active{display:block}
+/* Task cards */
+.task-card{
+  background:var(--card);border-radius:var(--rds);padding:16px;margin-bottom:12px;
+  box-shadow:var(--sh);cursor:pointer;transition:transform .15s,box-shadow .15s;
+  display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.task-card:active{transform:scale(.98);box-shadow:var(--sh2)}
+.task-card.done{opacity:.6;pointer-events:none}
+.task-card .task-icon{font-size:32px;flex-shrink:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:var(--p3);border-radius:12px}
+.task-card .task-body{flex:1;min-width:0}
+.task-card .task-title{font-weight:600;font-size:var(--fs2);margin-bottom:4px;line-height:1.3}
+.task-card .task-desc{font-size:13px;color:var(--t2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.task-card .task-meta{display:flex;align-items:center;gap:8px;margin-top:8px}
+.tag{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+.tag-easy{background:#d1fae5;color:#065f46}
+.tag-medium{background:#fef3c7;color:#92400e}
+.tag-hard{background:#fee2e2;color:#991b1b}
+.tag-done{background:#e2e8f0;color:#64748b}
+.reward{font-weight:700;font-size:var(--fs);color:var(--gold);white-space:nowrap}
+.reward::before{content:'💰 '}
+/* Empty */
+.empty{text-align:center;padding:40px 20px;color:var(--t2)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+.empty .title{font-size:var(--fs3);font-weight:600;margin-bottom:4px;color:var(--t1)}
+.empty .sub{font-size:var(--fs)}
+/* Nav */
+.nav{
+  display:flex;background:var(--card);border-top:1px solid #f1f0f5;
+  padding:6px 0 calc(6px + var(--safe));flex-shrink:0;
+  box-shadow:0 -2px 12px rgba(0,0,0,.04);
+}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0;cursor:pointer;color:var(--t3);transition:color .2s;font-size:11px;font-weight:500;user-select:none;-webkit-tap-highlight-color:transparent}
+.nav-item .nav-icon{font-size:22px;transition:transform .2s}
+.nav-item.active{color:var(--p)}
+.nav-item.active .nav-icon{transform:scale(1.1)}
+/* Me page */
+.me-header{text-align:center;padding:20px 0 16px}
+.me-avatar{font-size:56px;margin-bottom:8px}
+.me-balance{font-size:40px;font-weight:800;color:var(--p);letter-spacing:-1px}
+.me-balance-label{font-size:var(--fs);color:var(--t2);margin-bottom:4px}
+.me-stats{display:flex;gap:12px;margin-bottom:20px}
+.me-stat{flex:1;background:var(--card);border-radius:var(--rds2);padding:14px;text-align:center;box-shadow:var(--sh)}
+.me-stat .num{font-size:24px;font-weight:700;color:var(--t1)}
+.me-stat .lbl{font-size:12px;color:var(--t2);margin-top:2px}
+.history-list{display:flex;flex-direction:column;gap:8px}
+.history-item{background:var(--card);border-radius:var(--rds2);padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:var(--sh);font-size:var(--fs)}
+.history-item .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.history-item .dot.done{background:var(--g)}
+.history-item .dot.paid{background:var(--gold)}
+.history-item .info{flex:1;min-width:0}
+.history-item .info .h-title{font-weight:600;font-size:var(--fs)}
+.history-item .info .h-date{font-size:12px;color:var(--t2)}
+.history-item .amount{font-weight:700;color:var(--gold);white-space:nowrap}
+/* Task modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fadeIn .2s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-sheet{
+  background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;
+  max-height:85dvh;overflow-y:auto;padding:8px 20px 24px;
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:8px auto 16px}
+.modal-title{font-size:var(--fs3);font-weight:700;margin-bottom:16px;text-align:center}
+.task-content{background:var(--p3);border-radius:var(--rds2);padding:14px;margin-bottom:14px;font-size:var(--fs);line-height:1.6}
+.options{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.option-btn{
+  background:var(--card);border:2px solid #e2e8f0;border-radius:var(--rds2);padding:14px;
+  text-align:left;font-size:var(--fs);cursor:pointer;transition:all .15s;line-height:1.5;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.option-btn:active{transform:scale(.98)}
+.option-btn.selected{border-color:var(--p);background:var(--p3)}
+.option-btn.correct{border-color:var(--g);background:var(--g2)}
+.option-btn.wrong{border-color:var(--r);background:var(--r2)}
+.option-label{font-weight:700;color:var(--p);margin-bottom:4px;font-size:13px}
+.reason-input{
+  width:100%;border:2px solid #e2e8f0;border-radius:var(--rds2);padding:12px;
+  font-size:var(--fs);font-family:inherit;resize:none;min-height:80px;
+  outline:none;transition:border-color .2s;margin-bottom:14px;
+}
+.reason-input:focus{border-color:var(--p)}
+.btn{
+  display:block;width:100%;padding:14px;border:none;border-radius:var(--rds2);
+  font-size:var(--fs2);font-weight:700;cursor:pointer;text-align:center;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none;
+}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--p);color:#fff}
+.btn-primary:disabled{background:#c4b5fd;pointer-events:none}
+.btn-ghost{background:transparent;color:var(--t2);font-weight:500;font-size:var(--fs)}
+/* Admin */
+.admin-entry{text-align:center;padding:20px}
+.admin-entry .lock{font-size:40px;opacity:.3;cursor:pointer;display:inline-block;transition:opacity .2s}
+.admin-entry .lock:active{opacity:.6}
+.admin-panel{display:none;padding:0 20px}
+.admin-panel.show{display:block}
+.admin-section{margin-bottom:20px}
+.admin-section h3{font-size:var(--fs2);font-weight:700;margin-bottom:10px;color:var(--p)}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:4px;color:var(--t2)}
+.form-group input,.form-group select{
+  width:100%;padding:10px 12px;border:2px solid #e2e8f0;border-radius:var(--rds3);
+  font-size:var(--fs);font-family:inherit;outline:none;transition:border-color .2s;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--p)}
+.btn-sm{padding:10px 16px;font-size:var(--fs);width:auto;display:inline-block}
+.btn-danger{background:var(--r);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+/* Toast */
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:200;
+  background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:var(--fs);font-weight:600;pointer-events:none;
+  animation:toastIn .3s ease,toastOut .3s ease 1.7s forwards;
+  white-space:nowrap;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+/* Coin rain */
+.coin-particle{
+  position:fixed;z-index:150;font-size:24px;pointer-events:none;
+  animation:coinDrop .8s ease-out forwards;
+}
+@keyframes coinDrop{
+  0%{opacity:1;transform:translateY(0) scale(1)}
+  100%{opacity:0;transform:translateY(-120px) scale(.3)}
+}
+/* Cooldown */
+.cooldown-badge{
+  display:inline-flex;align-items:center;gap:4px;background:var(--r2);color:var(--r);
+  padding:4px 10px;border-radius:12px;font-size:12px;font-weight:600;margin-top:8px;
+}
+/* Responsive */
+@media(min-width:481px){
+  .app{border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0}
+}
+
+/* Pulse for new */
+@keyframes pulse{0%,100%{box-shadow:0 2px 8px rgba(124,58,237,.08)}50%{box-shadow:0 2px 20px rgba(124,58,237,.2)}}
+.task-card.new{animation:pulse 2s ease-in-out 3}
+
+/* Done stamp */
+.done-stamp{position:absolute;right:12px;top:12px;font-size:36px;opacity:.4;pointer-events:none}
+
+/* Settlement card */
+.settlement-card{
+  background:linear-gradient(135deg,#fef3c7,#fde68a);border-radius:var(--rds);
+  padding:16px;margin-bottom:16px;box-shadow:var(--sh);text-align:center;
+}
+.settlement-card .big{font-size:36px;font-weight:800;color:#92400e}
+.settlement-card .note{font-size:13px;color:#92400e;margin-top:4px}
+
+/* Confetti */
+.confetti{position:fixed;z-index:160;pointer-events:none;font-size:20px;animation:confettiFall 1.5s ease-out forwards}
+@keyframes confettiFall{
+  0%{opacity:1;transform:translateY(0) rotate(0deg) scale(1)}
+  100%{opacity:0;transform:translateY(80vh) rotate(720deg) scale(.2)}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="logo"><span>✨</span>星星任务站</div>
+    <div class="progress-badge" id="headerCoin">
+      <span class="coin">🪙</span><span class="val" id="headerBalance">0.00</span>
+    </div>
+  </div>
+  <!-- Daily bar -->
+  <div class="daily-bar">
+    <div class="daily-card">
+      <div class="icon">📅</div>
+      <div class="daily-info">
+        <div class="title">今日进度</div>
+        <div class="sub" id="dailyLabel">已完成 0/5 个任务</div>
+        <div class="daily-bar-track"><div class="daily-bar-fill" id="dailyBar" style="width:0%"></div></div>
+      </div>
+      <div class="daily-amount" id="dailyAmount">¥0<small>/天</small></div>
+    </div>
+  </div>
+  <!-- Main -->
+  <div class="main" id="mainContent">
+    <!-- Tasks page -->
+    <div class="page active" id="pageTasks">
+      <div id="taskList"></div>
+      <div class="empty" id="taskEmpty" style="display:none">
+        <div class="icon">🎉</div><div class="title">今天任务都完成啦</div><div class="sub">明天再来吧～记得找哥结算哦</div>
+      </div>
+      <div id="cooldownNotice" style="display:none"></div>
+    </div>
+    <!-- Me page -->
+    <div class="page" id="pageMe">
+      <div class="me-header">
+        <div class="me-avatar">🌟</div>
+        <div class="me-balance-label">本周收入</div>
+        <div class="me-balance" id="weekBalance">¥0.00</div>
+      </div>
+      <div class="me-stats">
+        <div class="me-stat"><div class="num" id="totalTasks">0</div><div class="lbl">完成任务</div></div>
+        <div class="me-stat"><div class="num" id="totalEarned">¥0</div><div class="lbl">累计收入</div></div>
+        <div class="me-stat"><div class="num" id="streakDays">0</div><div class="lbl">连续天数</div></div>
+      </div>
+      <div class="settlement-card" id="settlementCard" style="display:none">
+        <div>💰 待结算金额</div>
+        <div class="big" id="pendingSettle">¥0.00</div>
+        <div class="note">找哥结算吧～</div>
+      </div>
+      <div class="history-list" id="historyList"></div>
+      <div class="admin-entry">
+        <div class="lock" id="adminLock" title="管理后台">🔒</div>
+      </div>
+    </div>
+  </div>
+  <!-- Nav -->
+  <div class="nav">
+    <div class="nav-item active" data-page="tasks">
+      <span class="nav-icon">📝</span>任务
+    </div>
+    <div class="nav-item" data-page="me">
+      <span class="nav-icon">⭐</span>我的
+    </div>
+  </div>
+</div>
+<!-- Task Modal -->
+<div class="modal-overlay" id="taskModal" style="display:none">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">任务详情</div>
+    <div class="task-content" id="modalContent"></div>
+    <div class="options" id="modalOptions"></div>
+    <textarea class="reason-input" id="modalReason" placeholder="✏️ 写一句话说说你为什么这么选吧～"></textarea>
+    <button class="btn btn-primary" id="modalSubmit">✅ 提交答案</button>
+    <button class="btn btn-ghost" id="modalClose" style="margin-top:8px">取消</button>
+  </div>
+</div>
+<!-- Admin Modal -->
+<div class="modal-overlay" id="adminModal" style="display:none">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚙️ 管理后台</div>
+    <div id="adminAuth">
+      <div class="form-group"><label>管理密码</label><input type="password" id="adminPwd" placeholder="输入管理密码"></div>
+      <button class="btn btn-primary btn-sm" id="adminLogin">进入</button>
+    </div>
+    <div id="adminPanel" class="admin-panel">
+      <div class="admin-section">
+        <h3>🤖 API 配置</h3>
+        <div class="form-group"><label>API 地址</label><input type="text" id="cfgEndpoint" placeholder="https://api.siliconflow.cn/v1"></div>
+        <div class="form-group"><label>API Key</label><input type="password" id="cfgKey" placeholder="sk-..."></div>
+        <div class="form-group"><label>模型</label><input type="text" id="cfgModel" placeholder="deepseek-ai/DeepSeek-V3.2"></div>
+        <div class="form-group"><label>CORS 代理 (可选)</label><input type="text" id="cfgProxy" placeholder="留空尝试直连"></div>
+        <button class="btn btn-primary btn-sm" id="cfgSave">💾 保存配置</button>
+        <button class="btn btn-ghost btn-sm" id="cfgTest" style="margin-left:8px">🔍 测试连接</button>
+        <span id="cfgStatus" style="font-size:12px;margin-left:8px"></span>
+      </div>
+      <div class="admin-section">
+        <h3>📊 任务参数</h3>
+        <div class="form-group"><label>每日任务上限</label><input type="number" id="cfgDailyMax" min="1" max="20" value="5"></div>
+        <div class="form-group"><label>任务冷却(秒)</label><input type="number" id="cfgCooldown" min="0" max="3600" value="120"></div>
+        <div class="form-group"><label>简单任务奖励(元)</label><input type="number" id="cfgRewardEasy" min="0.1" max="10" step="0.1" value="0.5"></div>
+        <div class="form-group"><label>中等任务奖励(元)</label><input type="number" id="cfgRewardMedium" min="0.1" max="20" step="0.1" value="1"></div>
+        <div class="form-group"><label>困难任务奖励(元)</label><input type="number" id="cfgRewardHard" min="0.1" max="30" step="0.1" value="2"></div>
+        <div class="form-group"><label>管理密码</label><input type="text" id="cfgAdminPwd" placeholder="修改管理密码"></div>
+        <button class="btn btn-primary btn-sm" id="cfgSaveParams">💾 保存参数</button>
+      </div>
+      <div class="admin-section">
+        <h3>💸 结算管理</h3>
+        <p style="font-size:var(--fs);color:var(--t2);margin-bottom:8px">本周收入: <strong id="adminWeekTotal" style="color:var(--p)">¥0.00</strong></p>
+        <button class="btn btn-gold btn-sm" id="adminSettle">✅ 标记本周已结算</button>
+        <p style="font-size:12px;color:var(--t2);margin-top:6px">结算后将清零本周计数并记录</p>
+      </div>
+    </div>
+    <button class="btn btn-ghost" id="adminClose" style="margin-top:8px">关闭</button>
+  </div>
+</div>
+
+<script>
+// ===========================
+// Star Task Station — 星星任务站
+// ===========================
+(function(){
+'use strict';
+
+// ─── DOM refs ──────────────────────
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const app={
+  taskList:$('#taskList'),taskEmpty:$('#taskEmpty'),cooldownNotice:$('#cooldownNotice'),
+  headerBalance:$('#headerBalance'),dailyLabel:$('#dailyLabel'),dailyBar:$('#dailyBar'),
+  dailyAmount:$('#dailyAmount'),weekBalance:$('#weekBalance'),
+  totalTasks:$('#totalTasks'),totalEarned:$('#totalEarned'),streakDays:$('#streakDays'),
+  historyList:$('#historyList'),settlementCard:$('#settlementCard'),pendingSettle:$('#pendingSettle'),
+  taskModal:$('#taskModal'),modalTitle:$('#modalTitle'),modalContent:$('#modalContent'),
+  modalOptions:$('#modalOptions'),modalReason:$('#modalReason'),modalSubmit:$('#modalSubmit'),
+  modalClose:$('#modalClose'),adminModal:$('#adminModal'),adminAuth:$('#adminAuth'),
+  adminPanel:$('#adminPanel'),adminPwd:$('#adminPwd'),adminLogin:$('#adminLogin'),
+  adminClose:$('#adminClose'),adminLock:$('#adminLock'),
+  cfgEndpoint:$('#cfgEndpoint'),cfgKey:$('#cfgKey'),cfgModel:$('#cfgModel'),cfgProxy:$('#cfgProxy'),
+  cfgSave:$('#cfgSave'),cfgTest:$('#cfgTest'),cfgStatus:$('#cfgStatus'),
+  cfgDailyMax:$('#cfgDailyMax'),cfgCooldown:$('#cfgCooldown'),
+  cfgRewardEasy:$('#cfgRewardEasy'),cfgRewardMedium:$('#cfgRewardMedium'),cfgRewardHard:$('#cfgRewardHard'),
+  cfgAdminPwd:$('#cfgAdminPwd'),cfgSaveParams:$('#cfgSaveParams'),
+  adminWeekTotal:$('#adminWeekTotal'),adminSettle:$('#adminSettle')
+};
+
+// ─── Default Config ──────────────
+const DEFAULTS={
+  endpoint:'https://api.siliconflow.cn/v1',
+  key:'sk-keaiywrubuuaulgztpytasegkifnrirdvygqoptttgrcflsh',
+  model:'deepseek-ai/DeepSeek-V3.2',
+  proxy:'',
+  dailyMax:5,
+  cooldown:120,
+  rewardEasy:0.5,
+  rewardMedium:1,
+  rewardHard:2,
+  adminPwd:'admin'
+};
+
+// ─── State ───────────────────────
+const STORAGE_KEY='star_task_station';
+let state=loadState();
+let currentTask=null;
+let cooldownTimer=null;
+let cooldownRemain=0;
+
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const s=JSON.parse(raw);
+      // Merge defaults for new fields
+      s.cfg=s.cfg||{};
+      for(const k of Object.keys(DEFAULTS)){if(!(k in s.cfg))s.cfg[k]=DEFAULTS[k];}
+      s.daily={date:today(),done:0,earned:0,...(s.daily||{})};
+      s.weekly={week:getWeek(),earned:0,...(s.weekly||{})};
+      s.tasks=s.tasks||[];
+      s.history=s.history||[];
+      s.settlements=s.settlements||[];
+      s.streak=s.streak||{count:0,lastDate:''};
+      return s;
+    }
+  }catch(e){}
+  return freshState();
+}
+
+function freshState(){
+  return {
+    cfg:{...DEFAULTS},
+    daily:{date:today(),done:0,earned:0},
+    weekly:{week:getWeek(),earned:0},
+    tasks:[],
+    history:[],
+    settlements:[],
+    streak:{count:1,lastDate:today()},
+    totalEarned:0,
+    totalTasks:0
+  };
+}
+
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}
+
+function today(){return new Date().toISOString().slice(0,10);}
+function getWeek(){
+  const d=new Date();
+  const day=d.getDay()||7;
+  d.setDate(d.getDate()-day+1); // Monday
+  return d.toISOString().slice(0,10);
+}
+
+function getNow(){return Date.now();}
+function fmtTime(ts){const d=new Date(ts);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+
+// ─── Daily/weekly reset ──────────
+function checkReset(){
+  if(state.daily.date!==today()){
+    state.daily={date:today(),done:0,earned:0};
+  }
+  const wk=getWeek();
+  if(state.weekly.week!==wk){
+    state.weekly={week:wk,earned:0};
+  }
+  // Streak
+  const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+  const yStr=yesterday.toISOString().slice(0,10);
+  if(state.streak.lastDate===yStr){
+    state.streak.count++;state.streak.lastDate=today();
+  }else if(state.streak.lastDate!==today()){
+    state.streak={count:1,lastDate:today()};
+  }
+}
+
+// ─── Config helpers ──────────────
+function cfg(k){return state.cfg[k]??DEFAULTS[k];}
+function rewardFor(diff){
+  if(diff==='easy')return parseFloat(cfg('rewardEasy'));
+  if(diff==='hard')return parseFloat(cfg('rewardHard'));
+  return parseFloat(cfg('rewardMedium'));
+}
+
+// ─── Task Pool Engine ────────────
+const STATIC_TASKS=[
+  {q:'小明说"太阳从西边升起"，小红说"太阳从东边升起"。谁说得对？',a:'小红说得对',b:'小明说得对',correct:'a',reason:'太阳从东边升起，这是自然常识。',diff:'easy',topic:'科学'},
+  {q:'下面哪句话写得更好？',a:'春天来了，花开了。',b:'春天踮着脚尖走过，一路撒下花瓣。',correct:'b',reason:'B用了拟人手法，更有画面感。',diff:'medium',topic:'语文'},
+  {q:'"一言既出"的下一句是什么？',a:'驷马难追',b:'千金不换',correct:'a',reason:'成语"一言既出，驷马难追"，意思是一句话说出了口，就是套上四匹马拉的车也难追上。',diff:'easy',topic:'语文'},
+  {q:'AI说"鲸鱼是鱼类"。这句话对吗？',a:'不对，鲸鱼是哺乳动物',b:'对，鲸鱼生活在海里所以是鱼',correct:'a',reason:'鲸鱼用肺呼吸、胎生哺乳，是哺乳动物不是鱼类。',diff:'easy',topic:'科学'},
+  {q:'下面哪个句子有错别字？',a:'我今天特别开心',b:'我今天特别开兴',correct:'b',reason:'"开兴"应该是"开心"，"兴"和"心"在这里容易混淆。',diff:'easy',topic:'语文'},
+  {q:'AI写了两个故事开头，哪个更吸引人？',a:'这是一个普通的早晨，我起床了。',b:'那天早上，我打开门，发现门口放着一个没有写寄件人的包裹。',correct:'b',reason:'B制造了悬念，让人想知道包裹里是什么。',diff:'medium',topic:'写作'},
+  {q:'"三人行，必有我师焉"是谁说的？',a:'孔子',b:'老子',correct:'a',reason:'这句话出自《论语》，是孔子说的，意思是几个人一起走路，其中必定有可以做我老师的人。',diff:'easy',topic:'国学'},
+  {q:'下面哪个行为更节约用水？',a:'洗澡时一直开着水龙头',b:'涂沐浴露的时候关掉水',correct:'b',reason:'涂沐浴露时关水可以节省大量自来水。',diff:'easy',topic:'生活'},
+  {q:'AI说"地球绕着月亮转"。对吗？',a:'不对，月亮绕着地球转',b:'对，地球绕着月亮转',correct:'a',reason:'月球是地球的卫星，围绕地球公转。',diff:'easy',topic:'科学'},
+  {q:'"举头望明月"的下一句？',a:'低头思故乡',b:'低头看地上',correct:'a',reason:'这是李白《静夜思》的名句。',diff:'easy',topic:'诗词'},
+  {q:'哪种说法更准确？',a:'企鹅生活在北极',b:'企鹅生活在南极',correct:'b',reason:'企鹅主要分布在南极及周边地区，北极没有企鹅。',diff:'medium',topic:'地理'},
+  {q:'下面哪句表达更生动？',a:'她的脸红红的。',b:'她的脸红得像熟透的番茄。',correct:'b',reason:'B用了比喻，更形象生动。',diff:'medium',topic:'语文'},
+];
+let staticPool=[...STATIC_TASKS];
+// Shuffle
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+shuffle(staticPool);
+
+function getStaticTask(){
+  if(staticPool.length===0){staticPool=[...STATIC_TASKS];shuffle(staticPool);}
+  const t=staticPool.pop();
+  return {...t,id:'static_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)};
+}
+
+// ─── API call ────────────────────
+async function callAPI(messages){
+  const endpoint=cfg('endpoint')||DEFAULTS.endpoint;
+  const key=cfg('key')||DEFAULTS.key;
+  const model=cfg('model')||DEFAULTS.model;
+  const proxy=cfg('proxy')||'';
+
+  const url=endpoint.replace(/\/+$/,'')+'/chat/completions';
+  const body=JSON.stringify({model, messages, temperature:0.9, max_tokens:600});
+
+  const tryFetch=async(fetchUrl,fetchOpts)=>{
+    const resp=await fetch(fetchUrl,fetchOpts);
+    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    return resp.json();
+  };
+
+  const opts={method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},body};
+
+  // Try proxy first if configured
+  if(proxy){
+    try{return await tryFetch(proxy,{...opts,headers:{...opts.headers,'X-Target-URL':url}});}catch(e){}
+    try{return await tryFetch(proxy+encodeURIComponent(url),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({method:'POST',url,headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},body})});}catch(e){}
+  }
+
+  // Try public proxies
+  const proxies=[
+    (u,o)=>fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(u),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...o,url:u,body:o.body})}).then(r=>r.json()),
+    (u,o)=>fetch('https://thingproxy.freeboard.io/fetch/'+u,o).then(r=>r.json()),
+    (u,o)=>fetch('https://cors.eu.org/'+u,o).then(r=>r.json()),
+  ];
+
+  // Direct call last
+  try{return await tryFetch(url,opts);}catch(e){}
+
+  // Try each proxy
+  for(const pf of proxies){
+    try{return await pf(url,opts);}catch(e){continue;}
+  }
+
+  throw new Error('所有API调用方式均失败');
+}
+
+async function generateTaskFromAI(difficulty){
+  const prompts={
+    easy:'请生成一个适合10岁小学生的简单判断任务。主题可以是科学常识、语文知识、生活常识等。\n\n必须返回严格JSON（不要markdown代码块）：\n{"q":"问题（一句话，简单明了）","a":"选项A（可能对的或错的）","b":"选项B（另一个选项）","correct":"a或b（哪个是正确的）","reason":"为什么（简短，<30字）","diff":"easy","topic":"主题标签"}\n\n注意：两个选项中一个正确一个错误，但不要太明显。',
+    medium:'请生成一个适合10岁小学生的中等难度思考任务。可以是语言辨析、逻辑判断、阅读理解等。\n\n必须返回严格JSON（不要markdown代码块）：\n{"q":"问题或情境描述（2-3句）","a":"选项A","b":"选项B","correct":"a或b","reason":"解释（<40字）","diff":"medium","topic":"主题标签"}\n\n两个选项各有道理但有优劣之分，需要思考才能判断。',
+    hard:'请生成一个适合10岁小学生的高难度任务。涉及推理、分析、评价等。\n\n必须返回严格JSON（不要markdown代码块）：\n{"q":"问题（需要仔细阅读和思考，3-4句）","a":"选项A（详细一些）","b":"选项B（详细一些）","correct":"a或b","reason":"详细解释为什么（<60字）","diff":"hard","topic":"主题标签"}\n\n两个选项看起来都合理，但需要仔细分析才能找出更优的。'
+  };
+
+  const messages=[
+    {role:'system',content:'你是一个儿童教育任务生成器。每次生成不同的主题、不同的内容。不要重复之前的题目。返回纯JSON，不要markdown包裹。'},
+    {role:'user',content:prompts[difficulty]||prompts.easy}
+  ];
+
+  const data=await callAPI(messages);
+  let text=data.choices[0].message.content.trim();
+  // Clean markdown wrapping
+  text=text.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'');
+  const task=JSON.parse(text);
+  task.id='ai_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
+  task.diff=task.diff||difficulty;
+  return task;
+}
+
+// ─── Task Pool Management ────────
+async function ensureTaskPool(){
+  const cfgDM=parseInt(cfg('dailyMax'));
+  const needed=cfgDM+3-state.tasks.length; // Keep buffer
+  if(needed<=0)return;
+  const diffs=['easy','easy','medium','medium','hard'];
+  for(let i=0;i<Math.min(needed,8);i++){
+    const diff=diffs[Math.floor(Math.random()*diffs.length)];
+    try{
+      const t=await generateTaskFromAI(diff);
+      state.tasks.push(t);
+    }catch(e){
+      // Fallback to static
+      const t=getStaticTask();
+      const exists=state.tasks.find(x=>x.q===t.q);
+      if(!exists)state.tasks.push(t);
+    }
+  }
+  saveState();
+}
+
+function getAvailableTasks(){
+  const cfgDM=parseInt(cfg('dailyMax'));
+  const remaining=cfgDM-state.daily.done;
+  if(remaining<=0)return [];
+  const doneIds=state.history.filter(h=>h.date===today()).map(h=>h.taskId);
+  const avail=state.tasks.filter(t=>!doneIds.includes(t.id));
+  // Shuffle and limit
+  shuffle(avail);
+  return avail.slice(0,Math.min(remaining+2,avail.length));
+}
+
+// ─── Cooldown ────────────────────
+function getCooldownRemaining(){
+  const lastDone=state.history.filter(h=>h.date===today()).sort((a,b)=>b.time-a.time)[0];
+  if(!lastDone)return 0;
+  const cd=parseInt(cfg('cooldown'))*1000;
+  const elapsed=getNow()-lastDone.time;
+  return Math.max(0,cd-elapsed);
+}
+
+function formatCooldown(ms){
+  if(ms<=0)return '';
+  const s=Math.ceil(ms/1000);
+  const m=Math.floor(s/60);
+  const sec=s%60;
+  if(m>0)return `${m}分${sec}秒`;
+  return `${sec}秒`;
+}
+
+// ─── UI Render ───────────────────
+function renderAll(){
+  renderTasks();
+  renderMe();
+  updateHeader();
+}
+
+function updateHeader(){
+  const cfgDM=parseInt(cfg('dailyMax'));
+  app.headerBalance.textContent=state.daily.earned.toFixed(2);
+  app.dailyLabel.textContent=`已完成 ${state.daily.done}/${cfgDM} 个任务`;
+  app.dailyBar.style.width=(state.daily.done/cfgDM*100)+'%';
+  app.dailyAmount.innerHTML=`¥${state.daily.earned.toFixed(2)}<small>/天</small>`;
+  app.weekBalance.textContent='¥'+state.weekly.earned.toFixed(2);
+  app.totalTasks.textContent=state.totalTasks;
+  app.totalEarned.textContent='¥'+state.totalEarned.toFixed(2);
+  app.streakDays.textContent=state.streak.count;
+  app.pendingSettle.textContent='¥'+state.weekly.earned.toFixed(2);
+}
+
+function renderTasks(){
+  const cfgDM=parseInt(cfg('dailyMax'));
+  const tasks=getAvailableTasks();
+  const remaining=cfgDM-state.daily.done;
+
+  if(remaining<=0){
+    app.taskList.innerHTML='';
+    app.taskEmpty.style.display='block';
+    app.cooldownNotice.style.display='none';
+    return;
+  }
+  app.taskEmpty.style.display='none';
+
+  const cd=getCooldownRemaining();
+  if(cd>0){
+    app.cooldownNotice.style.display='block';
+    app.cooldownNotice.innerHTML=`<div class="cooldown-badge">⏳ 冷却中，${formatCooldown(cd)}后可做下一题</div>`;
+  }else{
+    app.cooldownNotice.style.display='none';
+  }
+
+  const diffLabel={easy:'简单',medium:'中等',hard:'困难'};
+  const diffIcon={easy:'🌱',medium:'🔍',hard:'💎'};
+  const diffTag={easy:'tag-easy',medium:'tag-medium',hard:'tag-hard'};
+
+  app.taskList.innerHTML=tasks.map((t,i)=>{
+    const disabled=cd>0?' done':'';
+    const newClass=i===0&&cd===0?' new':'';
+    return `
+    <div class="task-card${disabled}${newClass}" data-task-id="${t.id}" data-diff="${t.diff||'medium'}">
+      <div class="task-icon">${diffIcon[t.diff]||'📋'}</div>
+      <div class="task-body">
+        <div class="task-title">${escHtml(t.q).slice(0,60)}${t.q.length>60?'…':''}</div>
+        <div class="task-desc">主题：${escHtml(t.topic||'综合')} · 类型：选择判断</div>
+        <div class="task-meta">
+          <span class="tag ${diffTag[t.diff]||'tag-medium'}">${diffLabel[t.diff]||'中等'}</span>
+          <span class="reward">${rewardFor(t.diff||'medium').toFixed(1)}元</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if(tasks.length===0&&remaining>0){
+    app.taskList.innerHTML='<div class="empty"><div class="icon">⏳</div><div class="title">正在加载新任务</div><div class="sub">AI正在生成有趣的题目…</div></div>';
+  }
+}
+
+function renderMe(){
+  const recent=state.history.filter(h=>h.date===today()).slice(0,10);
+  if(recent.length===0){
+    app.historyList.innerHTML='<div class="empty"><div class="icon">📭</div><div class="sub">今天还没有完成任务哦～</div></div>';
+  }else{
+    app.historyList.innerHTML=recent.map(h=>`
+      <div class="history-item">
+        <div class="dot done"></div>
+        <div class="info">
+          <div class="h-title">${escHtml(h.taskQ||'任务').slice(0,30)}</div>
+          <div class="h-date">${fmtTime(h.time)} · ${h.diff||''}</div>
+        </div>
+        <div class="amount">+¥${h.reward.toFixed(1)}</div>
+      </div>
+    `).join('');
+  }
+
+  // Settlement card
+  if(state.weekly.earned>0){
+    app.settlementCard.style.display='block';
+    app.adminWeekTotal.textContent='¥'+state.weekly.earned.toFixed(2);
+  }else{
+    app.settlementCard.style.display='none';
+    app.adminWeekTotal.textContent='¥0.00';
+  }
+}
+
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+// ─── Task modal ──────────────────
+function openTask(task){
+  currentTask=task;
+  app.modalTitle.textContent='📋 '+(task.diff==='hard'?'高难度':task.diff==='easy'?'简单任务':'中等任务');
+  app.modalContent.innerHTML=`<strong>问题：</strong><br>${escHtml(task.q)}`;
+  app.modalOptions.innerHTML=`
+    <button class="option-btn" data-choice="a"><span class="option-label">选项 A</span>${escHtml(task.a)}</button>
+    <button class="option-btn" data-choice="b"><span class="option-label">选项 B</span>${escHtml(task.b)}</button>
+  `;
+  app.modalReason.value='';
+  app.modalSubmit.disabled=false;
+  app.modalSubmit.textContent='✅ 提交答案';
+  app.taskModal.style.display='flex';
+
+  // Clear selected
+  app.modalOptions.querySelectorAll('.option-btn').forEach(b=>{b.classList.remove('selected','correct','wrong');});
+
+  // Bind options
+  app.modalOptions.onclick=function(e){
+    const btn=e.target.closest('.option-btn');
+    if(!btn||btn.classList.contains('correct')||btn.classList.contains('wrong'))return;
+    app.modalOptions.querySelectorAll('.option-btn').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    currentTask._choice=btn.dataset.choice;
+  };
+}
+
+function closeTask(){
+  currentTask=null;
+  app.taskModal.style.display='none';
+}
+
+async function submitTask(){
+  if(!currentTask||!currentTask._choice)return;
+  const choice=currentTask._choice;
+  const reason=app.modalReason.value.trim();
+
+  if(!reason){
+    toast('✏️ 写一句你的想法吧～');
+    return;
+  }
+  if(reason.length<3){
+    toast('再写多一点吧，至少3个字～');
+    return;
+  }
+
+  app.modalSubmit.disabled=true;
+  app.modalSubmit.textContent='提交中…';
+
+  // Show correct/wrong
+  const isCorrect=choice===currentTask.correct;
+  app.modalOptions.querySelectorAll('.option-btn').forEach(b=>{
+    b.classList.remove('selected');
+    if(b.dataset.choice===currentTask.correct)b.classList.add('correct');
+    if(b.dataset.choice===choice&&!isCorrect)b.classList.add('wrong');
+  });
+
+  const reward=rewardFor(currentTask.diff||'medium');
+  const bonus=isCorrect?0.2:0;
+  const totalReward=reward+bonus;
+
+  // Update state
+  state.daily.done++;
+  state.daily.earned+=totalReward;
+  state.weekly.earned+=totalReward;
+  state.totalEarned+=totalReward;
+  state.totalTasks++;
+  state.history.unshift({
+    time:getNow(),date:today(),
+    taskId:currentTask.id,taskQ:currentTask.q,
+    diff:currentTask.diff,choice,isCorrect,reason,
+    reward:totalReward
+  });
+  saveState();
+
+  // Coin rain
+  spawnCoins(8);
+  if(isCorrect)spawnConfetti(12);
+
+  // Update modal
+  app.modalSubmit.textContent=isCorrect?'🎉 太棒了！+¥'+totalReward.toFixed(1):'💪 答错了但没关系 +¥'+totalReward.toFixed(1);
+  setTimeout(()=>{
+    app.modalContent.innerHTML+=`<div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px"><strong>💡 AI点评：</strong>${escHtml(currentTask.reason)}</div>`;
+  },300);
+
+  setTimeout(()=>{
+    closeTask();
+    checkReset();
+    renderAll();
+    // Preload more tasks
+    ensureTaskPool().catch(()=>{});
+  },2000);
+}
+
+// ─── Animations ──────────────────
+function spawnCoins(count){
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const el=document.createElement('div');
+      el.className='coin-particle';
+      el.textContent='🪙';
+      el.style.left=(30+Math.random()*40)+'%';
+      el.style.top=(40+Math.random()*20)+'%';
+      el.style.animationDuration=(.6+Math.random()*.6)+'s';
+      el.style.animationDelay='0s';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1000);
+    },i*60);
+  }
+}
+
+function spawnConfetti(count){
+  const emojis=['🌟','✨','🎉','💫','⭐','🎀','💖','🌈'];
+  for(let i=0;i<count;i++){
+    setTimeout(()=>{
+      const el=document.createElement('div');
+      el.className='confetti';
+      el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+      el.style.left=(10+Math.random()*80)+'%';
+      el.style.top='-5%';
+      el.style.animationDuration=(1+Math.random()*1.5)+'s';
+      el.style.animationDelay=Math.random()*.3+'s';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),2000);
+    },i*40);
+  }
+}
+
+// ─── Toast ───────────────────────
+function toast(msg){
+  const existing=document.querySelector('.toast');
+  if(existing)existing.remove();
+  const el=document.createElement('div');
+  el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),2000);
+}
+
+// ─── Admin ───────────────────────
+function openAdmin(){
+  app.adminModal.style.display='flex';
+  app.adminAuth.style.display='block';
+  app.adminPanel.classList.remove('show');
+  app.adminPwd.value='';
+  // Populate config
+  app.cfgEndpoint.value=cfg('endpoint');
+  app.cfgKey.value=cfg('key');
+  app.cfgModel.value=cfg('model');
+  app.cfgProxy.value=cfg('proxy')||'';
+  app.cfgDailyMax.value=cfg('dailyMax');
+  app.cfgCooldown.value=cfg('cooldown');
+  app.cfgRewardEasy.value=cfg('rewardEasy');
+  app.cfgRewardMedium.value=cfg('rewardMedium');
+  app.cfgRewardHard.value=cfg('rewardHard');
+  app.cfgAdminPwd.placeholder='留空不修改';
+  app.cfgAdminPwd.value='';
+  app.adminWeekTotal.textContent='¥'+state.weekly.earned.toFixed(2);
+  app.cfgStatus.textContent='';
+}
+
+function closeAdmin(){
+  app.adminModal.style.display='none';
+}
+
+app.adminLogin.onclick=function(){
+  const pwd=app.adminPwd.value;
+  if(pwd===cfg('adminPwd')){
+    app.adminAuth.style.display='none';
+    app.adminPanel.classList.add('show');
+  }else{
+    toast('❌ 密码错误');
+  }
+};
+
+app.cfgSave.onclick=function(){
+  state.cfg.endpoint=app.cfgEndpoint.value.trim()||DEFAULTS.endpoint;
+  state.cfg.key=app.cfgKey.value.trim()||DEFAULTS.key;
+  state.cfg.model=app.cfgModel.value.trim()||DEFAULTS.model;
+  state.cfg.proxy=app.cfgProxy.value.trim();
+  saveState();
+  toast('💾 API配置已保存');
+};
+
+app.cfgTest.onclick=async function(){
+  app.cfgStatus.textContent='测试中…';
+  app.cfgStatus.style.color='#64748b';
+  try{
+    state.cfg.endpoint=app.cfgEndpoint.value.trim()||DEFAULTS.endpoint;
+    state.cfg.key=app.cfgKey.value.trim()||DEFAULTS.key;
+    state.cfg.model=app.cfgModel.value.trim()||DEFAULTS.model;
+    state.cfg.proxy=app.cfgProxy.value.trim();
+    saveState();
+    await callAPI([{role:'user',content:'回复一个字：好'}]);
+    app.cfgStatus.textContent='✅ 连接成功';
+    app.cfgStatus.style.color='#10b981';
+  }catch(e){
+    app.cfgStatus.textContent='❌ 失败: '+e.message;
+    app.cfgStatus.style.color='#ef4444';
+  }
+};
+
+app.cfgSaveParams.onclick=function(){
+  state.cfg.dailyMax=parseInt(app.cfgDailyMax.value)||5;
+  state.cfg.cooldown=parseInt(app.cfgCooldown.value)||120;
+  state.cfg.rewardEasy=parseFloat(app.cfgRewardEasy.value)||0.5;
+  state.cfg.rewardMedium=parseFloat(app.cfgRewardMedium.value)||1;
+  state.cfg.rewardHard=parseFloat(app.cfgRewardHard.value)||2;
+  const newPwd=app.cfgAdminPwd.value.trim();
+  if(newPwd)state.cfg.adminPwd=newPwd;
+  saveState();
+  checkReset();renderAll();
+  toast('💾 参数已保存');
+};
+
+app.adminSettle.onclick=function(){
+  if(state.weekly.earned<=0){toast('本周没有收入可结算');return;}
+  if(!confirm(`确认结算本周 ¥${state.weekly.earned.toFixed(2)}？结算后将清零本周计数。`))return;
+  state.settlements.unshift({
+    week:state.weekly.week,
+    amount:state.weekly.earned,
+    time:getNow(),
+    tasks:state.totalTasks
+  });
+  state.weekly.earned=0;
+  saveState();
+  checkReset();renderAll();
+  app.adminWeekTotal.textContent='¥0.00';
+  toast('✅ 本周已结算');
+  closeAdmin();
+};
+
+// ─── Event bindings ──────────────
+// Nav
+$$('.nav-item').forEach(item=>{
+  item.addEventListener('click',function(){
+    const page=this.dataset.page;
+    $$('.nav-item').forEach(x=>x.classList.remove('active'));
+    this.classList.add('active');
+    $$('.page').forEach(x=>x.classList.remove('active'));
+    if(page==='tasks')$('#pageTasks').classList.add('active');
+    else $('#pageMe').classList.add('active');
+    checkReset();renderAll();
+  });
+});
+
+// Task card clicks
+app.taskList.addEventListener('click',function(e){
+  const card=e.target.closest('.task-card');
+  if(!card||card.classList.contains('done'))return;
+  const taskId=card.dataset.taskId;
+  const task=state.tasks.find(t=>t.id===taskId);
+  if(task)openTask(task);
+});
+
+// Modal events
+app.modalClose.onclick=closeTask;
+app.modalSubmit.onclick=submitTask;
+app.taskModal.addEventListener('click',function(e){if(e.target===app.taskModal)closeTask();});
+
+app.adminClose.onclick=closeAdmin;
+app.adminModal.addEventListener('click',function(e){if(e.target===app.adminModal)closeAdmin();});
+
+// Admin lock - long press or 5 taps
+let lockTaps=0;let lockTapTimer=null;
+app.adminLock.addEventListener('click',function(){
+  lockTaps++;
+  if(lockTaps>=5){lockTaps=0;openAdmin();return;}
+  clearTimeout(lockTapTimer);
+  lockTapTimer=setTimeout(()=>{lockTaps=0;},1500);
+});
+
+// Keyboard
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){closeTask();closeAdmin();}
+  if(e.ctrlKey&&e.key==='m'){e.preventDefault();openAdmin();}
+});
+
+// ─── Init ────────────────────────
+async function init(){
+  checkReset();
+
+  // Streak
+  if(state.streak.lastDate!==today()){
+    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    if(state.streak.lastDate===yesterday.toISOString().slice(0,10)){
+      state.streak.count++;state.streak.lastDate=today();
+    }else if(state.streak.lastDate!==today()){
+      state.streak.count=1;state.streak.lastDate=today();
+    }
+  }
+  saveState();
+  renderAll();
+
+  // Preload tasks
+  const avail=getAvailableTasks();
+  const cfgDM=parseInt(cfg('dailyMax'));
+  const remaining=cfgDM-state.daily.done;
+  if(remaining>0&&avail.length<remaining+1){
+    try{
+      await ensureTaskPool();
+    }catch(e){
+      // Fill with static
+      while(state.tasks.length<cfgDM+5){
+        const t=getStaticTask();
+        if(!state.tasks.find(x=>x.q===t.q))state.tasks.push(t);
+      }
+      saveState();
+    }
+  }
+
+  renderAll();
+
+  // Cooldown ticker
+  setInterval(()=>{
+    const cd=getCooldownRemaining();
+    if(cd!==cooldownRemain){
+      cooldownRemain=cd;
+      if(cd>0){
+        app.cooldownNotice.style.display='block';
+        app.cooldownNotice.innerHTML=`<div class="cooldown-badge">⏳ 冷却中，${formatCooldown(cd)}后可做下一题</div>`;
+      }else{
+        app.cooldownNotice.style.display='none';
+        // Refresh task list
+        renderTasks();
+      }
+    }
+  },1000);
+
+  // Daily reset check
+  setInterval(()=>{
+    if(state.daily.date!==today()){
+      checkReset();saveState();renderAll();
+      ensureTaskPool().catch(()=>{});
+    }
+  },30000);
+
+  console.log('✨ 星星任务站已就绪');
+  console.log('   API: '+(cfg('key')?'已配置':'未配置'));
+  console.log('   每日上限: '+cfg('dailyMax')+' 个任务');
+  console.log('   冷却时间: '+cfg('cooldown')+' 秒');
+  console.log('   管理后台: 连续点击🔒5次 或 Ctrl+M');
+}
+
+init().catch(e=>console.error('Init error:',e));
+
+})();
+</script>
+</body>
+</html>
